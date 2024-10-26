@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to Text</title>
+</head>
+<body>
+    <h1>Speech to Text</h1>
+    <button onclick="startRecognition()">Start Recognition</button>
+    <p id="result"></p>
+
+    <script>
+        function startRecognition() {
+            fetch('/speech_to_text', { method: 'POST' })
+                .then(response => response.text())
+                .then(text => {
+                    document.getElementById('result').innerText = text;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+</html>
