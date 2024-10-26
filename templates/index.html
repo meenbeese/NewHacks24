@@ -37,6 +37,7 @@
             color: white;
             border: none;
             border-radius: 5px;
+            transition: background-color 0.3s ease;
         }
         .start {
             background-color: #007bff;
@@ -61,6 +62,11 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
+        #timer {
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -71,37 +77,72 @@
         <option value="15">15 seconds</option>
         <option value="30">30 seconds</option>
     </select>
+    <div id="timer"></div>
     <textarea id="result" rows="10" cols="50" readonly></textarea>
     <button id="recognitionButton" class="start" onclick="toggleRecognition()">Start Recognition</button>
 
     <script>
         const socket = io.connect(location.origin);
         let recognitionActive = false;
+        let timerInterval;
 
         function toggleRecognition() {
             const button = document.getElementById('recognitionButton');
             if (recognitionActive) {
                 stopRecognition();
-                button.textContent = 'Start Recognition';
-                button.classList.remove('stop');
-                button.classList.add('start');
             } else {
                 startRecognition();
-                button.textContent = 'Stop Recognition';
-                button.classList.remove('start');
-                button.classList.add('stop');
             }
             recognitionActive = !recognitionActive;
         }
 
+        function updateButtonState(isActive) {
+            const button = document.getElementById('recognitionButton');
+            if (isActive) {
+                button.textContent = 'Stop Recognition';
+                button.classList.remove('start');
+                button.classList.add('stop');
+            } else {
+                button.textContent = 'Start Recognition';
+                button.classList.remove('stop');
+                button.classList.add('start');
+            }
+        }
+
         function startRecognition() {
-            const interval = document.getElementById('interval').value;
+            const interval = parseInt(document.getElementById('interval').value);
+            updateButtonState(true);
+            startTimer(interval);
             socket.emit('start_transcription', { interval: interval });
         }
 
         function stopRecognition() {
+            updateButtonState(false);
+            clearInterval(timerInterval);
+            document.getElementById('timer').textContent = '';
             socket.emit('stop_transcription');
-            console.log('Recognition stopped');
+            recognitionActive = false;
+        }
+
+        function startTimer(duration) {
+            const timerDisplay = document.getElementById('timer');
+            let timeLeft = duration;
+
+            timerDisplay.textContent = `Time remaining: ${timeLeft} seconds`;
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = `Time remaining: ${timeLeft} seconds`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    stopRecognition();
+                    timerDisplay.textContent = 'Time\'s up!';
+                    setTimeout(() => {
+                        timerDisplay.textContent = '';
+                    }, 2000);
+                }
+            }, 1000);
         }
 
         socket.on('transcription_update', (data) => {
