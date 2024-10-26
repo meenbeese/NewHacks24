@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
+import joblib
 
 data = {
     "texts": [
@@ -79,3 +80,6 @@ example_vector = vectorizer.transform(example_text).toarray()
 example_tensor = torch.tensor(example_vector, dtype=torch.float32)
 prediction = model(example_tensor).item()
 print(f"Prediction: {'Scam' if prediction > 0.5 else 'Not Scam'}")
+
+torch.save(model.state_dict(), 'scam_classifier.pth')
+joblib.dump(vectorizer, 'tfidf_vectorizer.pkl')
