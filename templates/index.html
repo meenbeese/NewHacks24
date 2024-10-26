@@ -8,14 +8,14 @@
 <body>
     <h1>Speech to Text</h1>
     <button onclick="startRecognition()">Start Recognition</button>
-    <p id="result"></p>
+    <textarea id="result" rows="10" cols="50" readonly></textarea>
 
     <script>
         function startRecognition() {
             fetch('/speech_to_text', { method: 'POST' })
                 .then(response => response.text())
                 .then(text => {
-                    document.getElementById('result').innerText = text;
+                    document.getElementById('result').value = text;
                 })
                 .catch(error => {
                     console.error('Error:', error);
