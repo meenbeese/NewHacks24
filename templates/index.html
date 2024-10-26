@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Speech to Text</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -74,6 +75,7 @@
     <button id="recognitionButton" class="start" onclick="toggleRecognition()">Start Recognition</button>
 
     <script>
+        const socket = io.connect(location.origin);
         let recognitionActive = false;
 
         function toggleRecognition() {
@@ -94,25 +96,26 @@
 
         function startRecognition() {
             const interval = document.getElementById('interval').value;
-            fetch('/speech_to_text', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ interval: interval })
-            })
-            .then(response => response.text())
-            .then(text => {
-                document.getElementById('result').value = text;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+            socket.emit('start_transcription', { interval: interval });
         }
 
         function stopRecognition() {
+            socket.emit('stop_transcription');
             console.log('Recognition stopped');
         }
+
+        socket.on('transcription_update', (data) => {
+            const textarea = document.getElementById('result');
+            if (data.phrase_complete) {
+                textarea.value += data.text + '\n';
+            } else {
+                textarea.value = textarea.value.slice(0, textarea.value.lastIndexOf('\n')) + '\n' + data.text;
+            }
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to server!');
+        });
     </script>
 </body>
 </html>

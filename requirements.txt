@@ -3,4 +3,7 @@ PyAudio~=0.2.14
 torch~=2.5.0
 scikit-learn~=1.5.2
 Flask~=3.0.3
+Flask-SocketIO~=5.4.1
 joblib~=1.4.2
+numpy~=2.0.0
+openai-whisper

@@ -1,48 +1,64 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
+import numpy as np
 import speech_recognition as sr
+import whisper
 import torch
-import torch.nn as nn
-import joblib
+from datetime import datetime, timedelta
+from queue import Queue
+from time import sleep
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'
+socketio = SocketIO(app)
 
-class ScamClassifier(nn.Module):
-    def __init__(self, input_dim):
-        super(ScamClassifier, self).__init__()
-        self.fc = nn.Linear(input_dim, 1)
+recognizer = sr.Recognizer()
+audio_model = whisper.load_model("base")
 
-    def forward(self, x):
-        return torch.sigmoid(self.fc(x))
+data_queue = Queue()
+phrase_time = None
 
-vectorizer = joblib.load('tfidf_vectorizer.pkl')
-input_dim = len(vectorizer.get_feature_names_out())
-
-model = ScamClassifier(input_dim=input_dim)
-model.load_state_dict(torch.load('scam_classifier.pth'))
-model.eval()
+def record_callback(_, audio: sr.AudioData):
+    data = audio.get_raw_data()
+    data_queue.put(data)
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/speech_to_text', methods=['POST'])
-def speech_to_text():
-    data = request.get_json()
-    interval = int(data.get('interval', 5))
-    recognizer = sr.Recognizer()
+@socketio.on('connect')
+def connect():
+    emit('message', {'text': 'Connected to server!'})
+
+@socketio.on('start_transcription')
+def start_transcription():
+    global phrase_time
     with sr.Microphone() as source:
-        audio = recognizer.listen(source, timeout=interval)
-        try:
-            text = recognizer.recognize_google(audio)
-            text_vector = vectorizer.transform([text]).toarray()
-            text_tensor = torch.tensor(text_vector, dtype=torch.float32)
-            prediction = model(text_tensor).item()
-            classification = 'Scam' if prediction > 0.5 else 'Not Scam'
-            return jsonify({'text': text, 'classification': classification})
-        except sr.UnknownValueError:
-            return jsonify({'error': "Sorry, I could not understand the audio."})
-        except sr.RequestError:
-            return jsonify({'error': "Could not request results; check your network connection."})
+        recognizer.adjust_for_ambient_noise(source)
+        recognizer.listen_in_background(source, record_callback, phrase_time_limit=2)
+
+        while True:
+            try:
+                now = datetime.utcnow()
+                if not data_queue.empty():
+                    phrase_complete = False
+                    if phrase_time and now - phrase_time > timedelta(seconds=3):
+                        phrase_complete = True
+                    phrase_time = now
+
+                    audio_data = b''.join(data_queue.queue)
+                    data_queue.queue.clear()
+
+                    audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+                    result = audio_model.transcribe(audio_np, fp16=torch.cuda.is_available())
+                    text = result['text'].strip()
+
+                    emit('transcription_update', {'text': text, 'phrase_complete': phrase_complete})
+
+                else:
+                    sleep(0.25)
+            except KeyboardInterrupt:
+                break
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
