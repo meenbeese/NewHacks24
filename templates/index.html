@@ -30,22 +30,48 @@
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
-            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
         }
-        button:hover {
+        .start {
+            background-color: #007bff;
+        }
+        .start:hover {
             background-color: #0056b3;
+        }
+        .stop {
+            background-color: #ff0000;
+        }
+        .stop:hover {
+            background-color: #cc0000;
         }
     </style>
 </head>
 <body>
     <h1>Speech to Text</h1>
-    <textarea id="result" rows="10" cols="50" readonly></textarea>
-    <button onclick="startRecognition()">Start Recognition</button>
+    <label for="result"></label><textarea id="result" rows="10" cols="50" readonly></textarea>
+    <button id="recognitionButton" class="start" onclick="toggleRecognition()">Start Recognition</button>
 
     <script>
+        let recognitionActive = false;
+
+        function toggleRecognition() {
+            const button = document.getElementById('recognitionButton');
+            if (recognitionActive) {
+                stopRecognition();
+                button.textContent = 'Start Recognition';
+                button.classList.remove('stop');
+                button.classList.add('start');
+            } else {
+                startRecognition();
+                button.textContent = 'Stop Recognition';
+                button.classList.remove('start');
+                button.classList.add('stop');
+            }
+            recognitionActive = !recognitionActive;
+        }
+
         function startRecognition() {
             fetch('/speech_to_text', { method: 'POST' })
                 .then(response => response.text())
@@ -55,6 +81,10 @@
                 .catch(error => {
                     console.error('Error:', error);
                 });
+        }
+
+        function stopRecognition() {
+            console.log('Recognition stopped');
         }
     </script>
 </body>
