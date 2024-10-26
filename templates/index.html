@@ -50,7 +50,13 @@
 </head>
 <body>
     <h1>Speech to Text</h1>
-    <label for="result"></label><textarea id="result" rows="10" cols="50" readonly></textarea>
+    <label for="interval">Select Listening Interval:</label>
+    <select id="interval">
+        <option value="5">5 seconds</option>
+        <option value="15">15 seconds</option>
+        <option value="30">30 seconds</option>
+    </select>
+    <textarea id="result" rows="10" cols="50" readonly></textarea>
     <button id="recognitionButton" class="start" onclick="toggleRecognition()">Start Recognition</button>
 
     <script>
@@ -73,14 +79,21 @@
         }
 
         function startRecognition() {
-            fetch('/speech_to_text', { method: 'POST' })
-                .then(response => response.text())
-                .then(text => {
-                    document.getElementById('result').value = text;
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
+            const interval = document.getElementById('interval').value;
+            fetch('/speech_to_text', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ interval: interval })
+            })
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById('result').value = text;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         }
 
         function stopRecognition() {

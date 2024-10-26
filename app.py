@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import speech_recognition as sr
 
 app = Flask(__name__)
@@ -9,9 +9,11 @@ def index():
 
 @app.route('/speech_to_text', methods=['POST'])
 def speech_to_text():
+    data = request.get_json()
+    interval = int(data.get('interval', 5))
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
-        audio = recognizer.listen(source)
+        audio = recognizer.listen(source, timeout=interval)
         try:
             text = recognizer.recognize_google(audio)
             return text
