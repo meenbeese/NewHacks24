@@ -15,6 +15,58 @@
             height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
+            position: relative;
+        }
+        .info-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 30px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .info-icon:hover {
+            background-color: #0056b3;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        .modal-text {
+            line-height: 1.6;
+            color: #333;
         }
         h1 {
             margin-bottom: 20px;
@@ -70,6 +122,25 @@
     </style>
 </head>
 <body>
+    <div class="info-icon" onclick="toggleModal()">i</div>
+    <div class="modal" id="infoModal" onclick="closeModalOnOutsideClick(event)">
+        <div class="modal-content">
+            <span class="close-button" onclick="toggleModal()">&times;</span>
+            <div class="modal-text">
+                <h3>How to Use Speech to Text</h3>
+                <p>Welcome! This tool converts your speech to text in real-time. Here's how to use it:</p>
+                <ol>
+                    <li>Select a recording duration from the dropdown menu</li>
+                    <li>Click "Start Recognition" to begin recording</li>
+                    <li>Start speaking - your words will appear in the text box</li>
+                    <li>Recording will automatically stop after the selected time</li>
+                    <li>You can stop recording at any time by clicking the stop button</li>
+                </ol>
+                <p>The timer will show you how much recording time is remaining.</p>
+            </div>
+        </div>
+    </div>
+
     <h1>Speech to Text</h1>
     <label for="interval">Select Listening Interval:</label>
     <select id="interval">
@@ -85,6 +156,17 @@
         const socket = io.connect(location.origin);
         let recognitionActive = false;
         let timerInterval;
+
+        function toggleModal() {
+            const modal = document.getElementById('infoModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function closeModalOnOutsideClick(event) {
+            if (event.target === document.getElementById('infoModal')) {
+                toggleModal();
+            }
+        }
 
         function toggleRecognition() {
             const button = document.getElementById('recognitionButton');
